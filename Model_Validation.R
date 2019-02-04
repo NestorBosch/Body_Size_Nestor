@@ -50,8 +50,8 @@ name<-"Size"
 
 # Set work directory----
 
-work.dir=("G:/My drive/Analysis_GlobalArchive_Bodysize_Nestor") #Nestor
-setwd("~/workspace") ### Ecocloud platform
+#work.dir=("G:/My drive/Analysis_GlobalArchive_Bodysize_Nestor") #Nestor
+work.dir=("~/workspace/Body_Size_Nestor") ### Ecocloud platform
 
 # Set sub directories----
 
@@ -59,6 +59,7 @@ data.dir=paste(work.dir,"Data",sep="/")
 plots.dir=paste(work.dir,"Plots",sep="/")
 model.out=paste(work.dir,"ModelOut",sep="/")
 functions.dir=paste(work.dir,"Functions",sep="/")
+layers.dir=paste(work.dir,"Layers",sep="/")
 
 # Read in data----
 
@@ -88,12 +89,6 @@ dat$year<-as.factor(dat$year)
 dat$sampling.deployment.duration.min.<-as.numeric(dat$sampling.deployment.duration.min.)
 plot(dat$sampling.deployment.duration.min.)
 
-## Create natural log of soak time
-
-dat$sampling.deployment.duration.min.<-log(dat$sampling.deployment.duration.min.)
-plot(dat$sampling.deployment.duration.min.)
-
-
 ## Transform predictors
 
 dat$gravity.200<-log1p(dat$gravity.200)
@@ -120,74 +115,68 @@ small<-dat%>%
 
 #### Investigating patterns in the residuals
 
-###### Large
+###### Large - relief + gravity.te.ausbath + status
 
 ### Fit the GAM model to the data set
 
-Ra.gamm=gam(response ~ s(relief, k = 3, bs = "cr") + te(gravity.200, ausbath, k = 3, bs = "cr") + status + s(campaignid,bs="re"),
-            family=tw(),offset = sampling.deployment.duration.min. ,data=large)
-plot(Ra.gamm,all.terms = TRUE,pages=1)
-summary(Ra.gamm)
-AIC(Ra.gamm)
+La.gamm=gam(response ~ s(relief, k = 3, bs = "cr") + te(gravity.200, ausbath, k = 3, bs = "cr") + status + s(campaignid,bs="re"),
+            family=tw(),offset = log(sampling.deployment.duration.min.) ,data=large)
+plot(La.gamm,all.terms = TRUE,pages=1)
+summary(La.gamm)
+AIC(La.gamm)
 par(mfrow=c(1,1))
-gam.check(Ra.gamm)
+gam.check(La.gamm)
 
 ## Set working directory
 
 setwd(plots.dir)
 
-pdf(file="Large_Residuals.pdf",height=5,width=7,pointsize=10)
+jpeg("Residuals_large_no_filter.jpg", width = 300, height = 300)
 par(mfrow=c(3,3))
 
-hist(residuals(Ra.gamm))
+hist(residuals(La.gamm))
 
-plot(large$response~ fitted(Ra.gamm))
+plot(large$response~ fitted(La.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(fitted(Ra.gamm), large$response), col="red")
+lines(lowess(fitted(La.gamm), large$response), col="red")
 
-
-plot(residuals(Ra.gamm)~ fitted(Ra.gamm))
+plot(residuals(La.gamm)~ fitted(La.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(fitted(Ra.gamm), residuals(Ra.gamm)), col="red")
+lines(lowess(fitted(La.gamm), residuals(La.gamm)), col="red")
 
-plot(large$relief,residuals(Ra.gamm))
+plot(large$relief,residuals(La.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(large$relief, residuals(Ra.gamm)), col="red")
+lines(lowess(large$relief, residuals(La.gamm)), col="red")
 
-plot(large$gravity.200,residuals(Ra.gamm))
+plot(large$gravity.200,residuals(La.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(large$gravity.200, residuals(Ra.gamm)), col="red")
+lines(lowess(large$gravity.200, residuals(La.gamm)), col="red")
 
-plot(large$ausbath,residuals(Ra.gamm))
+plot(large$ausbath,residuals(La.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(large$ausbath, residuals(Ra.gamm)), col="red")
+lines(lowess(large$ausbath, residuals(La.gamm)), col="red")
 
-plot(large$day,residuals(La.gamm))
-abline(h=0, lty="dotted")
-lines(lowess(large$day, residuals(La.gamm)), col="red")
-
-plot(large$year,residuals(La.gamm))
 plot(large$status,residuals(La.gamm))
 
 dev.off()
 
-###### Medium
+###### Medium - relief + gravity.te.ausbath + status
 
 ### Fit the GAM model to the data set
 
-Ma.gamm=gam(response~s(t_m, k = 3, bs = "cr") + s(t_sd, k = 3, bs = "cr") + s(ausbath,by=status,k=3,bs="cr") + status + s(year,bs="re")+ s(day,k=3,bs="cr"),
-            family=tw(),data=medium)
-plot(Ma.gamm, all.terms=TRUE,pages=1)
+Ma.gamm=gam(response ~ s(relief, k = 3, bs = "cr") + te(gravity.200, ausbath, k = 3, bs = "cr") + status + s(campaignid,bs="re"),
+            family=tw(),offset = log(sampling.deployment.duration.min.) ,data=medium)
+plot(Ma.gamm,all.terms = TRUE,pages=1)
 summary(Ma.gamm)
-
+AIC(Ma.gamm)
+par(mfrow=c(1,1))
 gam.check(Ma.gamm)
 
 ## Set working directory
 
 setwd(plots.dir)
 
-pdf(file="Medium_Residuals.pdf",height=5,width=7,pointsize=10)
-par(mfrow=c(3,3))
+jpeg("Residuals_medium_no_filter.jpg", width = 300, height = 300)
 par(mfrow=c(3,3))
 
 hist(residuals(Ma.gamm))
@@ -196,28 +185,22 @@ plot(medium$response~ fitted(Ma.gamm))
 abline(h=0, lty="dotted")
 lines(lowess(fitted(Ma.gamm), medium$response), col="red")
 
-
 plot(residuals(Ma.gamm)~ fitted(Ma.gamm))
 abline(h=0, lty="dotted")
 lines(lowess(fitted(Ma.gamm), residuals(Ma.gamm)), col="red")
 
-plot(medium$t_m,residuals(Ma.gamm))
+plot(medium$relief,residuals(Ma.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(medium$t_m, residuals(Ma.gamm)), col="red")
+lines(lowess(medium$relief, residuals(Ma.gamm)), col="red")
 
-plot(medium$t_sd,residuals(Ma.gamm))
+plot(medium$gravity.200,residuals(Ma.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(medium$t_sd, residuals(Ma.gamm)), col="red")
+lines(lowess(medium$gravity.200, residuals(Ma.gamm)), col="red")
 
 plot(medium$ausbath,residuals(Ma.gamm))
 abline(h=0, lty="dotted")
 lines(lowess(medium$ausbath, residuals(Ma.gamm)), col="red")
 
-plot(medium$day,residuals(Ma.gamm))
-abline(h=0, lty="dotted")
-lines(lowess(medium$day, residuals(Ma.gamm)), col="red")
-
-plot(medium$year,residuals(Ma.gamm))
 plot(medium$status,residuals(Ma.gamm))
 
 dev.off()
@@ -227,8 +210,8 @@ dev.off()
 
 ### Fit the GAM model to the data set
 
-Sa.gamm=gam(response ~ s(relief, k = 3, bs = "cr") + s(t_m, k = 3, bs = "cr") + s(t_sd, k = 3, bs = "cr") + s(year, bs = "re") + s(day,k=3,bs="cr"),
-            family=tw(),data=small)
+Sa.gamm=gam(response ~ s(t_sd, k = 3, bs = "cr") + s(ausbath,by=status, k = 3, bs = "cr") + s(dst2ramp,by=status, k = 3, bs = "cr") + status + s(campaignid, bs = "re"),
+            family=tw(),offset = log(sampling.deployment.duration.min.),data=small)
 plot(Sa.gamm,all.terms = T,pages = 1)
 summary(Sa.gamm)
 gam.check(Sa.gamm)
@@ -237,8 +220,7 @@ gam.check(Sa.gamm)
 
 setwd(plots.dir)
 
-pdf(file="Small_Residuals.pdf",height=5,width=7,pointsize=10)
-par(mfrow=c(3,3))
+jpeg("Residuals_small_no_filter.jpg", width = 300, height = 300)
 par(mfrow=c(3,3))
 
 hist(residuals(Sa.gamm))
@@ -252,28 +234,21 @@ plot(residuals(Sa.gamm)~ fitted(Sa.gamm))
 abline(h=0, lty="dotted")
 lines(lowess(fitted(Sa.gamm), residuals(Sa.gamm)), col="red")
 
-plot(small$t_m,residuals(Sa.gamm))
-abline(h=0, lty="dotted")
-lines(lowess(small$t_m, residuals(Sa.gamm)), col="red")
-
 plot(small$t_sd,residuals(Sa.gamm))
 abline(h=0, lty="dotted")
 lines(lowess(small$t_sd, residuals(Sa.gamm)), col="red")
 
-plot(small$relief,residuals(Sa.gamm))
+plot(small$ausbath,residuals(Sa.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(small$relief, residuals(Sa.gamm)), col="red")
+lines(lowess(small$ausbath, residuals(Sa.gamm)), col="red")
 
-plot(small$day,residuals(Sa.gamm))
+plot(small$dst2ramp,residuals(Sa.gamm))
 abline(h=0, lty="dotted")
-lines(lowess(small$day, residuals(Sa.gamm)), col="red")
+lines(lowess(small$dst2ramp, residuals(Sa.gamm)), col="red")
 
-plot(small$year,residuals(Sa.gamm))
-
+plot(small$status,residuals(Sa.gamm))
 
 dev.off()
-
-
 
 ## Define predictive ability using 5-fold cross-validation
 
